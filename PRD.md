@@ -44,7 +44,66 @@ The classification engine evaluates three different confidence scores and fuses 
   - `0.4 - 0.7`: Suspicious
   - `< 0.4`: Safe
 
-## 4. Workflow / Flowchart Description
+## 4. Workflow Flowchart & System Architecture
+
+### Pipeline Flowchart
+
+```mermaid
+graph TD
+    A[Start: run_pipeline] --> B[Load & Parse Metadata]
+    B --> C[Compute Metadata Score: M_t]
+    
+    A --> D[Load Audio File]
+    D --> E[Segment Audio into 5s Sliding Windows]
+    
+    E --> F[For Each 5s Window]
+    
+    F --> G[Extract Audio Features]
+    G --> H[Apply Heuristics & emvo-ai/voiceSHIELD-small Classifier]
+    H --> I[Compute Audio Score: A_t]
+    
+    I --> J{Is A_t > 0.3?}
+    J -- No --> K[Skip Text Stage, T_t = 0]
+    J -- Yes --> L[Transcribe Audio using openai/whisper-tiny]
+    
+    L --> M[Scan Transcript for Suspicious Keywords]
+    M --> N[Compute Text Score: T_t]
+    
+    K --> O[Fusion Logic]
+    N --> O
+    C -.-> O
+    
+    O --> P[Calculate Window Score S_t]
+    P -->|Average over all windows| Q[Final Aggregated Score S_final]
+    
+    Q --> R{Decision Threshold}
+    R -- > 0.7 --> S[Likely Scam]
+    R -- 0.4 - 0.7 --> T[Suspicious]
+    R -- < 0.4 --> U[Safe]
+```
+
+### Component Tree Diagram
+
+```mermaid
+mindmap
+  root((DP Scam System))
+    Metadata Engine
+      Parse Datetime
+      Format Heuristics
+      Time-of-day Check
+    Audio Engine
+      Pitch Extraction
+      Rate of Speech Analysis
+      Tone Evaluation
+      emvo-ai/voiceSHIELD-small
+    Text Engine
+      openai/whisper-tiny
+      Keyword Extractor
+    Fusion Engine
+      Weighted Window Averaging
+      Decision Thresholding
+```
+
 The workflow executes as follows:
 
 1. **Initialization:** The script `main.py` begins by extracting metadata features and calculating the global Metadata Score `M_t`.
